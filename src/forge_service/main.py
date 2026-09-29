@@ -6,23 +6,41 @@ from fastapi import FastAPI
 from forge_service.api.router import api_router
 from forge_service.core.config import get_settings
 
+import structlog
+
+from forge_service.core.logging import configure_logging
+from forge_service.middleware.request_context import request_context_middleware
+
+logger = structlog.get_logger()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    settings = get_settings()
+
     app.state.ready = False
 
-    # Future startup operations will be performed here:
-    # database checks, telemetry initialization and dependency validation.
+    logger.info(
+        "application_starting",
+        app_name=settings.app_name,
+        app_version=settings.app_version,
+        environment=settings.environment,
+    )
+
     app.state.ready = True
+
+    logger.info("application_ready")
 
     yield
 
-    # Stop accepting new traffic before shutdown cleanup starts.
     app.state.ready = False
+
+    logger.info("application_stopped")
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    configure_logging(settings.log_level)
 
     application = FastAPI(
         title=settings.app_name,
@@ -31,6 +49,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    application.middleware("http")(request_context_middleware)
     application.include_router(api_router)
 
     return application
