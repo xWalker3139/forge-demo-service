@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 from forge_service.main import app
+from forge_service.core.service_state import ServiceState
 
 
 def test_liveness_endpoint() -> None:
@@ -84,3 +85,35 @@ def test_metrics_use_route_template() -> None:
         response = client.get("/metrics")
 
     assert 'route="/health/live"' in response.text
+
+
+def test_service_is_ready_during_lifespan() -> None:
+    with TestClient(app) as client:
+        service_state = app.state.service_state
+
+        assert isinstance(service_state, ServiceState)
+        assert service_state.ready is True
+
+        response = client.get("/health/ready")
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "ready"}
+
+
+def test_service_is_not_ready_after_shutdown() -> None:
+    with TestClient(app):
+        service_state = app.state.service_state
+        assert service_state.ready is True
+
+    assert service_state.ready is False
+
+
+def test_readiness_returns_503_when_draining() -> None:
+    with TestClient(app) as client:
+        service_state = app.state.service_state
+        service_state.mark_not_ready()
+
+        response = client.get("/health/ready")
+
+    assert response.status_code == 503
+    assert response.json() == {"status": "not_ready"}

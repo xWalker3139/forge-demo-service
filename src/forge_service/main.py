@@ -11,6 +11,7 @@ import structlog
 
 from forge_service.core.logging import configure_logging
 from forge_service.middleware.request_context import request_context_middleware
+from forge_service.core.service_state import ServiceState
 
 logger = structlog.get_logger()
 
@@ -18,8 +19,9 @@ logger = structlog.get_logger()
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
+    service_state = ServiceState()
 
-    app.state.ready = False
+    app.state.service_state = service_state
 
     logger.info(
         "application_starting",
@@ -28,15 +30,23 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         environment=settings.environment,
     )
 
-    app.state.ready = True
+    # Future dependency checks will run before the service becomes ready.
+    service_state.mark_ready()
 
     logger.info("application_ready")
 
-    yield
+    try:
+        yield
+    finally:
+        # Stop advertising readiness before shutdown cleanup.
+        service_state.mark_not_ready()
 
-    app.state.ready = False
+        logger.info("application_stopping")
 
-    logger.info("application_stopped")
+        # Future cleanup operations will run here:
+        # closing database pools, flushing telemetry and stopping consumers.
+
+        logger.info("application_stopped")
 
 
 def create_app() -> FastAPI:

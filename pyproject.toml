@@ -40,3 +40,6 @@ dev = [
     "pytest-cov>=7.1.0",
     "ruff>=0.16.9",
 ]
+
+[project.scripts]
+forge-service = "forge_service.__main__:main"

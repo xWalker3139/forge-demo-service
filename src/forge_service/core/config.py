@@ -2,6 +2,8 @@ from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from pydantic import Field
+
 enable_fault_injection: bool = False
 
 
@@ -11,6 +13,14 @@ class Settings(BaseSettings):
     environment: str = "local"
     log_level: str = "INFO"
     enable_fault_injection: bool = False
+
+    host: str = "0.0.0.0"
+    port: int = Field(default=8000, ge=1, le=65535)
+    graceful_shutdown_timeout_seconds: int = Field(
+        default=30,
+        ge=1,
+        le=300,
+    )
 
     model_config = SettingsConfigDict(
         env_prefix="FORGE_",

@@ -5,6 +5,8 @@ from pydantic import BaseModel
 
 from forge_service.core.config import Settings, get_settings
 
+from forge_service.core.service_state import ServiceState
+
 router = APIRouter(tags=["health"])
 
 SettingsDependency = Annotated[Settings, Depends(get_settings)]
@@ -35,7 +37,13 @@ async def readiness(
     request: Request,
     response: Response,
 ) -> HealthResponse:
-    if not getattr(request.app.state, "ready", False):
+    service_state = getattr(
+        request.app.state,
+        "service_state",
+        None,
+    )
+
+    if not isinstance(service_state, ServiceState) or not service_state.ready:
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         return HealthResponse(status="not_ready")
 
