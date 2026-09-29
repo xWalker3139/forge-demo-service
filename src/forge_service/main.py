@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from forge_service.api.router import api_router
 from forge_service.core.config import get_settings
 
+from forge_service.core.metrics import configure_build_info
 import structlog
 
 from forge_service.core.logging import configure_logging
@@ -41,6 +42,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 def create_app() -> FastAPI:
     settings = get_settings()
     configure_logging(settings.log_level)
+
+    configure_build_info(
+        version=settings.app_version,
+        environment=settings.environment,
+    )
 
     application = FastAPI(
         title=settings.app_name,

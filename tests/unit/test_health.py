@@ -64,3 +64,23 @@ def test_invalid_request_id_is_replaced() -> None:
 
     assert response.status_code == 200
     assert response.headers["X-Request-ID"] != invalid_request_id
+
+
+def test_metrics_endpoint() -> None:
+    with TestClient(app) as client:
+        client.get("/health/live")
+        response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert "forge_build_info" in response.text
+    assert "forge_http_requests_total" in response.text
+    assert "forge_http_request_duration_seconds" in response.text
+    assert "forge_http_requests_in_progress" in response.text
+
+
+def test_metrics_use_route_template() -> None:
+    with TestClient(app) as client:
+        client.get("/health/live")
+        response = client.get("/metrics")
+
+    assert 'route="/health/live"' in response.text
