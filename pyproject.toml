@@ -43,3 +43,16 @@ dev = [
 
 [project.scripts]
 forge-service = "forge_service.__main__:main"
+
+[tool.coverage.run]
+branch = true
+source = ["forge_service"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 80
+exclude_lines = [
+    "if __name__ == .__main__.:",
+    "pragma: no cover",
+]
