@@ -38,3 +38,9 @@ Thumbs.db
 # Temporary files
 tmp/
 .cache/
+
+# Coverage artifacts
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
